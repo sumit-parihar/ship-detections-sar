@@ -43,16 +43,55 @@ html,body,[class*="css"]{ font-family:var(--fn)!important; background:var(--bg)!
 ::-webkit-scrollbar-thumb{background:var(--b2);border-radius:3px}
 ::-webkit-scrollbar-thumb:hover{background:var(--dim)}
 
-/* ══ Sidebar ══ */
+/* ══ Sidebar — FIXED, always visible, no toggle ══ */
 [data-testid="stSidebar"]{
   background:var(--surf)!important;
   border-right:1px solid var(--b)!important;
   width:300px!important;
+  position:fixed!important;
+  top:0!important;
+  left:0!important;
+  height:100vh!important;
+  z-index:999!important;
+  transform:translateX(0px)!important;
+  transition:none!important;
+  min-width:300px!important;
+  max-width:300px!important;
 }
 [data-testid="stSidebarContent"]{
   padding:18px 16px!important;
   overflow-y:auto!important;
+  height:100vh!important;
 }
+/* Hide the sidebar collapse/toggle button */
+[data-testid="stSidebarCollapseButton"],
+button[kind="header"],
+[data-testid="collapsedControl"],
+.st-emotion-cache-1rtdyuf,
+.st-emotion-cache-pkbazv,
+[data-testid="stSidebar"] > div:first-child > div > button {
+  display:none!important;
+  visibility:hidden!important;
+  pointer-events:none!important;
+}
+/* Push main content right to account for fixed sidebar */
+section[data-testid="stMain"],
+.main,
+[data-testid="stAppViewContainer"] > section:not([data-testid="stSidebar"]) {
+  margin-left:300px!important;
+  width:calc(100% - 300px)!important;
+  min-width:0!important;
+  overflow-x:hidden!important;
+}
+.main .block-container,
+[data-testid="stMainBlockContainer"] {
+  max-width:100%!important;
+  padding-left:24px!important;
+  padding-right:24px!important;
+  box-sizing:border-box!important;
+  width:100%!important;
+}
+
 [data-testid="stSidebar"] label,
 [data-testid="stSidebar"] p,
 [data-testid="stSidebar"] span:not([data-testid]),
@@ -212,14 +251,64 @@ html,body,[class*="css"]{ font-family:var(--fn)!important; background:var(--bg)!
 .upload-hint{display:flex;flex-direction:column;align-items:center;justify-content:center;
              padding:70px 20px;text-align:center;gap:14px}
 
+/* ══ Custom Spinner ══ */
+.shipscan-spinner-overlay {
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:16px;padding:32px;
+}
+.shipscan-spinner {
+  position:relative;width:56px;height:56px;
+}
+.shipscan-spinner .ring {
+  position:absolute;inset:0;border-radius:50%;border:2px solid transparent;
+  animation:spin-ring 1.4s cubic-bezier(0.65,0.05,0.36,0.95) infinite;
+}
+.shipscan-spinner .ring-1 {
+  border-top-color:var(--acc);border-right-color:var(--acc);
+  animation-duration:1.4s;
+}
+.shipscan-spinner .ring-2 {
+  inset:6px;border-bottom-color:var(--acc2);border-left-color:var(--acc2);
+  animation-duration:1.0s;animation-direction:reverse;
+}
+.shipscan-spinner .ring-3 {
+  inset:14px;border-top-color:var(--acc3);
+  animation-duration:0.7s;
+}
+.shipscan-spinner .dot {
+  position:absolute;inset:24px;background:var(--acc);border-radius:50%;
+  box-shadow:0 0 8px var(--acc);animation:dot-pulse 1.4s ease-in-out infinite;
+}
+@keyframes spin-ring {
+  0%  { transform:rotate(0deg); }
+  100%{ transform:rotate(360deg); }
+}
+@keyframes dot-pulse {
+  0%,100%{ opacity:1;transform:scale(1); }
+  50%     { opacity:0.4;transform:scale(0.6); }
+}
+.spinner-label {
+  font-family:var(--mono)!important;font-size:.68rem;color:var(--acc);
+  letter-spacing:.14em;text-transform:uppercase;
+  animation:label-fade 1.4s ease-in-out infinite;
+}
+@keyframes label-fade {
+  0%,100%{ opacity:1; }
+  50%     { opacity:0.5; }
+}
+
+/* Override Streamlit default spinner */
+[data-testid="stSpinner"] > div {
+  display:none!important;
+}
+
 /* ══ Misc ══ */
 .stProgress>div>div>div>div{background:var(--acc)!important}
-.stSpinner>div{border-top-color:var(--acc)!important}
 .stAlert{background:var(--surf)!important;border:1px solid var(--b)!important;border-radius:8px!important}
 [data-testid="stExpanderDetails"]{background:var(--surf2)!important;border:1px solid var(--b)!important}
 [data-testid="stExpander"] summary{font-family:var(--mono)!important;font-size:.75rem!important;color:var(--txt)!important}
 #MainMenu,footer,header{visibility:hidden}
-.block-container{padding-top:6px!important;max-width:1400px!important}
+.block-container{padding-top:6px!important;}
 [data-testid="stImage"] p{display:none}
 [data-testid="stToggle"] label{font-family:var(--mono)!important;font-size:.7rem!important;color:var(--txt)!important;}
 [data-testid="stFileUploader"]{background:var(--surf)!important;border:1px dashed var(--b2)!important;border-radius:var(--r)!important;padding:16px!important}
@@ -238,6 +327,22 @@ HF_REPO = "sumit3142857/ship-detection-yolo"
 
 import torch
 DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
+
+# ─── Custom spinner helper ─────────────────────────────────────────────────────
+def custom_spinner(label="Processing…"):
+    """Returns an st.empty() placeholder pre-filled with the ShipScan spinner."""
+    placeholder = st.empty()
+    placeholder.markdown(f"""
+    <div class="shipscan-spinner-overlay">
+      <div class="shipscan-spinner">
+        <div class="ring ring-1"></div>
+        <div class="ring ring-2"></div>
+        <div class="ring ring-3"></div>
+        <div class="dot"></div>
+      </div>
+      <div class="spinner-label">{label}</div>
+    </div>""", unsafe_allow_html=True)
+    return placeholder
 
 # ─── Model ─────────────────────────────────────────────────────────────────────
 @st.cache_resource(show_spinner=False)
@@ -447,11 +552,6 @@ def render_map_folium(pts_df, geo=None):
 
 
 def make_geojson_url(ship_pts, label="Ship"):
-    """
-    Encode a list of {lat, lon, conf} dicts as a GeoJSON FeatureCollection
-    and return a geojson.io URL that opens them all pinned on a free map.
-    No API key required.
-    """
     import json, urllib.parse
     features = []
     for i, p in enumerate(ship_pts):
@@ -472,12 +572,10 @@ def make_geojson_url(ship_pts, label="Ship"):
 
 
 def make_google_maps_url(ship_pts):
-    """Google Maps URL showing all ship locations (no API key needed)."""
     if not ship_pts:
         return None
     if len(ship_pts) == 1:
         return f"https://www.google.com/maps?q={ship_pts[0]['lat']},{ship_pts[0]['lon']}&z=16"
-    # Multiple: use search/dir format centred on first ship
     centre = ship_pts[0]
     return f"https://www.google.com/maps/search/?api=1&query={centre['lat']},{centre['lon']}"
 
@@ -611,7 +709,6 @@ def detect(image_pil, model, conf_t, iou_t, tile_sz, min_sz,
     all_boxes, all_scores, all_extra = [], [], []
     active_tiles = []
 
-    # Parallel batch execution via ThreadPoolExecutor
     futures_map = {}
     with ThreadPoolExecutor(max_workers=1) as exe:
         for bi, batch in enumerate(batches):
@@ -659,7 +756,6 @@ def detect(image_pil, model, conf_t, iou_t, tile_sz, min_sz,
                         cv2.FONT_HERSHEY_SIMPLEX, max(0.4, W / 1500),
                         (0, 210, 80), max(1, W // 1000))
 
-    # Sort tiles: strongest max_conf first
     active_tiles.sort(key=lambda t: t["max_conf"], reverse=True)
     return final_boxes, annotated, active_tiles
 
@@ -767,7 +863,10 @@ if not uploaded_files:
     </div>""", unsafe_allow_html=True)
     st.stop()
 
+# ── Load model with custom spinner ──
+spin = custom_spinner("Loading Model…")
 model = load_model()
+spin.empty()
 
 # ─── Per-file processing ───────────────────────────────────────────────────────
 for idx, uf in enumerate(uploaded_files):
@@ -775,13 +874,15 @@ for idx, uf in enumerate(uploaded_files):
         st.markdown(f'<div class="slbl">File {idx+1} / {len(uploaded_files)} — {uf.name}</div>',
                     unsafe_allow_html=True)
 
-    # Load
-    with st.spinner("Loading image…"):
-        try:
-            image, geo, geo_debug = load_image(uf)
-        except Exception as e:
-            st.error(f"❌ Cannot load **{uf.name}**: {e}")
-            continue
+    # Load with custom spinner
+    spin = custom_spinner("Loading Image…")
+    try:
+        image, geo, geo_debug = load_image(uf)
+    except Exception as e:
+        spin.empty()
+        st.error(f"❌ Cannot load **{uf.name}**: {e}")
+        continue
+    spin.empty()
 
     W, H = image.size
 
@@ -863,7 +964,6 @@ for idx, uf in enumerate(uploaded_files):
         if n == 0:
             st.info("No ships detected. Try lowering the **Confidence Threshold** in the sidebar.")
         else:
-            # Determine columns
             show_cols = []
             if show_original:  show_cols.append("original")
             if show_detected:  show_cols.append("detected")
@@ -905,7 +1005,6 @@ for idx, uf in enumerate(uploaded_files):
                 max_conf_tile   = td["max_conf"]
                 conf_pct        = int(max_conf_tile * 100)
 
-                # Colour grade badge
                 if max_conf_tile >= 0.75:
                     badge_cls, grade = "badge-green",  "HIGH"
                 elif max_conf_tile >= 0.50:
@@ -934,7 +1033,6 @@ for idx, uf in enumerate(uploaded_files):
 
                     st.image(td["image"], use_container_width=True)
 
-                    # ── Collect GPS points for this tile ──
                     tile_pts_geo = []
                     if geo:
                         for ship in td["ships"]:
@@ -944,7 +1042,6 @@ for idx, uf in enumerate(uploaded_files):
                             if lat_s is not None:
                                 tile_pts_geo.append({"lat": lat_s, "lon": lon_s, "conf": ship["conf"]})
 
-                    # ── Map buttons row ──
                     if tile_pts_geo:
                         btn_col1, btn_col2 = st.columns(2)
                         geojson_url  = make_geojson_url(tile_pts_geo, label=f"Tile#{ti+1} Ship")
@@ -1011,13 +1108,11 @@ for idx, uf in enumerate(uploaded_files):
             else:
                 df_map = pd.DataFrame(pts)
 
-                # ── Geospatial analytics strip ──────────────────────────
                 gsd = geo_pixel_size_m(geo)
                 img_w_km = (geo["w"] * gsd / 1000) if gsd else None
                 img_h_km = (geo["h"] * gsd / 1000) if gsd else None
                 coverage_km2 = (img_w_km * img_h_km) if img_w_km else None
 
-                # Spread of detections
                 lat_spread = df_map["lat"].max() - df_map["lat"].min()
                 lon_spread = df_map["lon"].max() - df_map["lon"].min()
                 spread_km  = haversine_km(
@@ -1025,7 +1120,6 @@ for idx, uf in enumerate(uploaded_files):
                     df_map["lat"].max(), df_map["lon"].max()
                 ) if len(pts) > 1 else 0.0
 
-                # Nearest-neighbour distance
                 min_dist_km = None
                 if len(pts) > 1:
                     dists = []
@@ -1064,7 +1158,6 @@ for idx, uf in enumerate(uploaded_files):
                   </div>
                 </div>""", unsafe_allow_html=True)
 
-                # ── Open All Ships on external map buttons ──────────────
                 all_pts_geo = [{"lat": r["lat"], "lon": r["lon"], "conf": r["conf"]} for _, r in df_map.iterrows()]
                 geojson_all_url = make_geojson_url(all_pts_geo, label="Ship")
                 gmaps_centre    = make_google_maps_url(all_pts_geo)
@@ -1089,12 +1182,10 @@ for idx, uf in enumerate(uploaded_files):
                         unsafe_allow_html=True)
                 st.caption("geojson.io shows all ships colour-coded by confidence · Google Maps centres on the detection area — both free, no sign-in needed")
 
-                # ── Interactive Folium map ──────────────────────────────
                 st.markdown('<div class="slbl">🗺 Interactive Map — Switch Layers via top-right control</div>', unsafe_allow_html=True)
                 st.caption("Layers: 🛰 Satellite · 🗺 Street · 🌑 Dark · 🌊 Ocean · 🔥 Heatmap · 📍 Markers · 📷 Footprint | 📐 Ruler tool (bottom-left) | ⛶ Fullscreen (top-left)")
                 render_map_folium(df_map, geo)
 
-                # ── GPS table ──────────────────────────────────────────
                 st.markdown('<div class="slbl">📋 All GPS Coordinates</div>', unsafe_allow_html=True)
                 display_df = df_map.copy()
                 display_df.index = display_df.index + 1

@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Virtual env
+venv/
+env/
+yolo-env/
+
+# Model files
+*.pt
+*.pth
+data.yaml
+
+# Dataset
+dataset/
+data/
+images/
+labels/
+
+# YOLO outputs
+runs/
+
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

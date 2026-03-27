@@ -1,0 +1,14 @@
+streamlit>=1.35
+opencv-python-headless
+ultralytics
+huggingface_hub
+Pillow
+pandas
+numpy
+tifffile
+imagecodecs
+rasterio
+pyproj
+pydeck
+folium
+streamlit-folium
